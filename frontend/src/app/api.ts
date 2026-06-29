@@ -26,6 +26,20 @@ export const api = createApi({
     githubLogin: builder.mutation({
       query: (code: string) => ({ url: 'auth/github/', method: 'POST', body: { code } }),
     }),
+    forgotPassword: builder.mutation({
+      query: (email: string) => ({
+        url: 'auth/forgot-password/',
+        method: 'POST',
+        body: { email },
+      }),
+    }),
+    resetPassword: builder.mutation({
+      query: ({ uid, token, password }: { uid: string; token: string; password: string }) => ({
+        url: `auth/reset-password/${uid}/${token}/`,
+        method: 'POST',
+        body: { password },
+      }),
+    }),
     getMe: builder.query({
       query: () => 'auth/me/',
     }),
@@ -77,6 +91,8 @@ export const {
   useLoginMutation,
   useGoogleLoginMutation,
   useGithubLoginMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
   useGetMeQuery,
   useGetOrgsQuery,
   useCreateOrgMutation,

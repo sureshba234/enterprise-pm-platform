@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoginMutation } from '../app/api';
+import { Link } from 'react-router-dom';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -97,6 +98,9 @@ export default function LoginPage() {
           Sign in with GitHub
         </button>
       </form>
+      <Link to="/forgot-password" className="block text-center text-sm text-slate-400 hover:text-slate-300 mt-3">
+          Forgot password?
+        </Link>
     </div>
   );
 }
