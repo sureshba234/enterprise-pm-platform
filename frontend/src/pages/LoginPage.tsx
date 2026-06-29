@@ -8,6 +8,25 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [login, { isLoading }] = useLoginMutation();
   const navigate = useNavigate();
+  const handleGoogleLogin = () => {
+    const params = new URLSearchParams({
+      client_id: '866308793335-3v40q955q5lo9ld4amievjhe28vqrmod.apps.googleusercontent.com',
+      redirect_uri: 'http://localhost:5173/auth/callback/google',
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'online',
+      prompt: 'select_account',
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  };
+  const handleGithubLogin = () => {
+    const params = new URLSearchParams({
+      client_id: 'Ov23lietmGfFWSa0dreN',
+      redirect_uri: 'http://localhost:5173/auth/callback/github',
+      scope: 'read:user user:emails',
+    });
+    window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +81,20 @@ export default function LoginPage() {
           className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-medium disabled:opacity-50"
         >
           {isLoading ? 'Logging in...' : 'Log In'}
+        </button>
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          className="w-full bg-white hover:bg-slate-100 text-slate-900 p-2 rounded font-medium"
+        >
+          Sign in with Google
+        </button>
+        <button
+          type="button"
+          onClick={handleGithubLogin}
+          className="w-full bg-slate-700 hover:bg-slate-600 text-white p-2 rounded font-medium"
+        >
+          Sign in with GitHub
         </button>
       </form>
     </div>

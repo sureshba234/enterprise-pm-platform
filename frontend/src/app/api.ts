@@ -20,6 +20,12 @@ export const api = createApi({
     login: builder.mutation({
       query: (body) => ({ url: 'auth/login/', method: 'POST', body }),
     }),
+    googleLogin: builder.mutation({
+      query: (code: string) => ({ url: 'auth/google/', method: 'POST', body: { code } }),
+    }),
+    githubLogin: builder.mutation({
+      query: (code: string) => ({ url: 'auth/github/', method: 'POST', body: { code } }),
+    }),
     getMe: builder.query({
       query: () => 'auth/me/',
     }),
@@ -69,6 +75,8 @@ export const api = createApi({
 export const {
   useRegisterMutation,
   useLoginMutation,
+  useGoogleLoginMutation,
+  useGithubLoginMutation,
   useGetMeQuery,
   useGetOrgsQuery,
   useCreateOrgMutation,
