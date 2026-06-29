@@ -1,3 +1,9 @@
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+import pyotp
+import qrcode
+import io
+import base64
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.tokens import default_token_generator
@@ -202,3 +208,105 @@ class ResetPasswordView(APIView):
         user.set_password(new_password)
         user.save()
         return Response({"detail": "Password reset successfully."})
+class MFASetupView(APIView):
+    def get(self, request):
+        user = request.user
+
+        if not user.mfa_secret:
+            user.mfa_secret = pyotp.random_base32()
+            user.save()
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        setup_uri = totp.provisioning_uri(name=user.email, issuer_name="Enterprise PM Platform")
+
+        qr = qrcode.make(setup_uri)
+        buffer = io.BytesIO()
+        qr.save(buffer, format='PNG')
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+        return Response({
+            "qr_code": f"data:image/png;base64,{qr_base64}",
+            "secret": user.mfa_secret,  # shown as a manual fallback if QR scanning fails
+        })
+
+
+class MFAEnableView(APIView):
+    def post(self, request):
+        user = request.user
+        code = request.data.get('code')
+
+        if not user.mfa_secret:
+            return Response({"detail": "Call MFA setup first."}, status=status.HTTP_400_BAD_REQUEST)
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if not totp.verify(code):
+            return Response({"detail": "Invalid code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.mfa_enabled = True
+        user.save()
+        return Response({"detail": "MFA enabled successfully."})
+
+
+class MFADisableView(APIView):
+    def post(self, request):
+        user = request.user
+        user.mfa_enabled = False
+        user.mfa_secret = None
+        user.save()
+        return Response({"detail": "MFA disabled."})
+class LoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        user = User.objects.filter(email=email).first()
+        if not user or not user.check_password(password):
+            return Response({"detail": "No active account found with the given credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if user.mfa_enabled:
+            # Don't issue real tokens yet — just prove the password was correct,
+            # and ask for the second factor.
+            mfa_token = RefreshToken.for_user(user)
+            mfa_token['mfa_pending'] = True
+            return Response({
+                "mfa_required": True,
+                "mfa_token": str(mfa_token.access_token),
+            })
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        })
+
+
+class MFAVerifyView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        mfa_token_str = request.data.get('mfa_token')
+        code = request.data.get('code')
+
+        try:
+            mfa_token = AccessToken(mfa_token_str)
+        except Exception:
+            return Response({"detail": "Invalid or expired session."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not mfa_token.get('mfa_pending'):
+            return Response({"detail": "Invalid session."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.get(id=mfa_token['user_id'])
+        totp = pyotp.TOTP(user.mfa_secret)
+
+        if not totp.verify(code):
+            return Response({"detail": "Invalid code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        })
