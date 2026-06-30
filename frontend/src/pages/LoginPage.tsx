@@ -1,6 +1,6 @@
+import { useLoginMutation, useVerifyMfaMutation } from '../app/api';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLoginMutation } from '../app/api';
 import { Link } from 'react-router-dom';
 
 export default function LoginPage() {
@@ -29,11 +29,19 @@ export default function LoginPage() {
     window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
   };
 
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [verifyMfa, { isLoading: mfaLoading }] = useVerifyMfaMutation();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       const result = await login({ email, password }).unwrap();
+      if (result.mfa_required) {
+        setMfaToken(result.mfa_token);
+        return;
+      }
       localStorage.setItem('access', result.access);
       localStorage.setItem('refresh', result.refresh);
       navigate('/dashboard');
@@ -42,65 +50,116 @@ export default function LoginPage() {
     }
   };
 
-  return (
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const result = await verifyMfa({ mfa_token: mfaToken, code: mfaCode }).unwrap();
+      localStorage.setItem('access', result.access);
+      localStorage.setItem('refresh', result.refresh);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err?.data?.detail || 'Invalid code.');
+    }
+  };
+ return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-slate-800 p-8 rounded-lg w-full max-w-sm space-y-4"
-      >
-        <h1 className="text-2xl font-bold text-white mb-2">Log In</h1>
+      {mfaToken ? (
+        <form
+          onSubmit={handleMfaSubmit}
+          className="bg-slate-800 p-8 rounded-lg w-full max-w-sm space-y-4"
+        >
+          <h1 className="text-2xl font-bold text-white mb-2">Enter Code</h1>
+          <p className="text-sm text-slate-400">
+            Open your authenticator app and enter the current 6-digit code.
+          </p>
 
-        {error && (
-          <p className="text-red-400 text-sm bg-red-950 p-2 rounded">{error}</p>
-        )}
+          {error && (
+            <p className="text-red-400 text-sm bg-red-950 p-2 rounded">{error}</p>
+          )}
 
-        <div>
-          <label className="text-sm text-slate-300">Email</label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={mfaCode}
+            onChange={(e) => setMfaCode(e.target.value)}
+            maxLength={6}
             required
-            className="w-full mt-1 p-2 rounded bg-slate-700 text-white border border-slate-600 focus:outline-none focus:border-blue-500"
+            placeholder="123456"
+            className="w-full p-2 rounded bg-slate-700 text-white border border-slate-600 text-center text-2xl tracking-widest focus:outline-none focus:border-blue-500"
           />
-        </div>
 
-        <div>
-          <label className="text-sm text-slate-300">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full mt-1 p-2 rounded bg-slate-700 text-white border border-slate-600 focus:outline-none focus:border-blue-500"
-          />
-        </div>
+          <button
+            type="submit"
+            disabled={mfaLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-medium disabled:opacity-50"
+          >
+            {mfaLoading ? 'Verifying...' : 'Verify'}
+          </button>
+        </form>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="bg-slate-800 p-8 rounded-lg w-full max-w-sm space-y-4"
+        >
+          <h1 className="text-2xl font-bold text-white mb-2">Log In</h1>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-medium disabled:opacity-50"
-        >
-          {isLoading ? 'Logging in...' : 'Log In'}
-        </button>
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="w-full bg-white hover:bg-slate-100 text-slate-900 p-2 rounded font-medium"
-        >
-          Sign in with Google
-        </button>
-        <button
-          type="button"
-          onClick={handleGithubLogin}
-          className="w-full bg-slate-700 hover:bg-slate-600 text-white p-2 rounded font-medium"
-        >
-          Sign in with GitHub
-        </button>
-      </form>
-      <Link to="/forgot-password" className="block text-center text-sm text-slate-400 hover:text-slate-300 mt-3">
-          Forgot password?
-        </Link>
+          {error && (
+            <p className="text-red-400 text-sm bg-red-950 p-2 rounded">{error}</p>
+          )}
+
+          <div>
+            <label className="text-sm text-slate-300">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full mt-1 p-2 rounded bg-slate-700 text-white border border-slate-600 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-slate-300">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full mt-1 p-2 rounded bg-slate-700 text-white border border-slate-600 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-medium disabled:opacity-50"
+          >
+            {isLoading ? 'Logging in...' : 'Log In'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full bg-white hover:bg-slate-100 text-slate-900 p-2 rounded font-medium"
+          >
+            Sign in with Google
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGithubLogin}
+            className="w-full bg-slate-700 hover:bg-slate-600 text-white p-2 rounded font-medium"
+          >
+            Sign in with GitHub
+          </button>
+
+          <Link to="/forgot-password" className="block text-center text-sm text-slate-400 hover:text-slate-300 mt-3">
+            Forgot password?
+          </Link>
+        </form>
+      )}
     </div>
   );
+  
+    
 }

@@ -40,6 +40,22 @@ export const api = createApi({
         body: { password },
       }),
     }),
+    getMfaSetup: builder.query({
+      query: () => 'auth/mfa/setup/',
+    }),
+    enableMfa: builder.mutation({
+      query: (code: string) => ({ url: 'auth/mfa/enable/', method: 'POST', body: { code } }),
+    }),
+    disableMfa: builder.mutation({
+      query: () => ({ url: 'auth/mfa/disable/', method: 'POST' }),
+    }),
+    verifyMfa: builder.mutation({
+      query: ({ mfa_token, code }: { mfa_token: string; code: string }) => ({
+        url: 'auth/mfa/verify/',
+        method: 'POST',
+        body: { mfa_token, code },
+      }),
+    }),
     getMe: builder.query({
       query: () => 'auth/me/',
     }),
@@ -93,6 +109,10 @@ export const {
   useGithubLoginMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useGetMfaSetupQuery,
+  useEnableMfaMutation,
+  useDisableMfaMutation,
+  useVerifyMfaMutation,
   useGetMeQuery,
   useGetOrgsQuery,
   useCreateOrgMutation,
