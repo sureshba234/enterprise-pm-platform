@@ -26,18 +26,22 @@ SECRET_KEY = 'django-insecure-f)9^#!3=&y=awqs(-#!ozly(avocof4@$r(#5p2t2+-qcj3%25
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    
+    'channels',
+
 
     'rest_framework',
     'rest_framework_simplejwt',
@@ -47,6 +51,7 @@ INSTALLED_APPS = [
     'organizations',
     'projects',
     'tasks',
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -153,3 +158,11 @@ GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET')
 GITHUB_CLIENT_ID = config('GITHUB_CLIENT_ID')
 GITHUB_CLIENT_SECRET = config('GITHUB_CLIENT_SECRET')
+
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}

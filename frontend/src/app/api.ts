@@ -67,6 +67,9 @@ export const api = createApi({
       query: (body) => ({ url: 'orgs/', method: 'POST', body }),
       invalidatesTags: ['Organization'],
     }),
+    getMessages: builder.query({
+      query: (orgId: number) => `orgs/${orgId}/messages/`,
+    }),
     getProjects: builder.query({
       query: (orgId: number) => `orgs/${orgId}/projects/`,
       providesTags: ['Project'],
@@ -121,4 +124,5 @@ export const {
   useGetTasksQuery,
   useCreateTaskMutation,
   useMoveTaskMutation,
+  useGetMessagesQuery,
 } = api;

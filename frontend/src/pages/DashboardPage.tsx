@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -50,6 +51,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
+      <div className="flex gap-4 mb-4">
+        <Link to="/dashboard" className="text-sm text-blue-400 hover:underline">Dashboard</Link>
+        <Link to="/chat" className="text-sm text-blue-400 hover:underline">Chat</Link>
+      </div>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       {/* Org switcher */}
