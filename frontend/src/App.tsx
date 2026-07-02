@@ -7,6 +7,7 @@ import GithubCallbackPage from './pages/GithubCallbackPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ChatPage from './pages/ChatPage';
+import NotesPage from './pages/NotesPage';
 
 
 
@@ -17,6 +18,8 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/projects/:projectId" element={<ProjectPage />} />
+        <Route path="/projects/:projectId" element={<ProjectPage />} />
+        <Route path="/projects/:projectId/notes" element={<NotesPage />} />
         <Route path="/auth/callback/google" element={<GoogleCallbackPage />} />
         <Route path="/auth/callback/github" element={<GithubCallbackPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

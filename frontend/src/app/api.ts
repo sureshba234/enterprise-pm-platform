@@ -12,7 +12,7 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Organization', 'Project', 'Task'],
+  tagTypes: ['Organization', 'Project', 'Task','Note'],
   endpoints: (builder) => ({
     register: builder.mutation({
       query: (body) => ({ url: 'auth/register/', method: 'POST', body }),
@@ -67,6 +67,33 @@ export const api = createApi({
       query: (body) => ({ url: 'orgs/', method: 'POST', body }),
       invalidatesTags: ['Organization'],
     }),
+    getNotes: builder.query({
+  query: (projectId: number) => `projects/${projectId}/notes/`,
+  providesTags: ['Note'],
+}),
+createNote: builder.mutation({
+  query: ({ projectId, ...body }: { projectId: number; title?: string; content?: string }) => ({
+    url: `projects/${projectId}/notes/`,
+    method: 'POST',
+    body,
+  }),
+  invalidatesTags: ['Note'],
+}),
+updateNote: builder.mutation({
+  query: ({ noteId, ...body }: { noteId: number; title?: string; content?: string }) => ({
+    url: `notes/${noteId}/`,
+    method: 'PATCH',
+    body,
+  }),
+  invalidatesTags: ['Note'],
+}),
+deleteNote: builder.mutation({
+  query: (noteId: number) => ({
+    url: `notes/${noteId}/`,
+    method: 'DELETE',
+  }),
+  invalidatesTags: ['Note'],
+}),
     getOrgMembers: builder.query({
   query: (orgId: number) => `orgs/${orgId}/members/`,
 }),
@@ -150,4 +177,8 @@ export const {
   useMarkNotificationReadMutation,
   useMarkAllNotificationsReadMutation,
   useGetOrgMembersQuery,
+  useGetNotesQuery,
+  useCreateNoteMutation,
+  useUpdateNoteMutation,
+  useDeleteNoteMutation,
 } = api;

@@ -104,6 +104,8 @@ export default function ProjectPage() {
         <div className="flex gap-4 items-center">
           <Link to="/dashboard" className="text-sm text-blue-400 hover:underline">Dashboard</Link>
           <Link to="/chat" className="text-sm text-blue-400 hover:underline">Chat</Link>
+          <Link to={`/projects/${id}`} className="text-sm text-blue-400 hover:underline">Kanban</Link>
+          <Link to={`/projects/${id}/notes`} className="text-sm text-blue-400 hover:underline">Notes</Link>
         </div>
         <NotificationBell />
       </div>
