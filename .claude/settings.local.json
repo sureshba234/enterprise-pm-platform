@@ -2,7 +2,25 @@
   "permissions": {
     "allow": [
       "Bash(python *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(npm --version)",
+      "Bash(gh auth *)",
+      "Bash(pip3 --version)",
+      "Bash(cp *)",
+      "mcp__github__search_repositories",
+      "Bash(gh repo *)",
+      "Bash(bash -c \"ls ~/.claude/sessions/ 2>/dev/null | head -10; echo ---; find ~/.claude/ -name *session* -o -name *resume* 2>/dev/null | head -10; echo ---; cat ~/.claude/settings.json 2>/dev/null | python3 -m json.tool 2>/dev/null | head -80; echo ---; find ~/.claude/ -name hooks* 2>/dev/null; echo ---; cat ~/.claude/hooks.json 2>/dev/null; echo ---; ls ~/.claude/projects/-mnt-c-dev-enterprise-pm-platform/memory/ 2>/dev/null; echo ---; cat ~/.claude/projects/-mnt-c-dev-enterprise-pm-platform/memory/MEMORY.md 2>/dev/null; echo ---; cat ~/.claude/keybindings.json 2>/dev/null; echo ---; claude --help 2>/dev/null | head -60; echo ---; find ~/.claude/ -name commands -type d 2>/dev/null; echo ---; ls ~/.claude/commands/ 2>/dev/null; echo ---; find /mnt/c/dev/ -maxdepth 3 -name *nim* -o -name *proxy* 2>/dev/null | head -10; echo ---; env | grep -i nim 2>/dev/null | sed 's/=.*/=<SET>/'\")",
+      "Bash(bash -c 'claude --version 2>/dev/null || echo \"not found\"; env | grep -iE '\\\\''anthropic|claude|nim|proxy|base_url|model'\\\\'' | sed '\\\\''s/=.*/=<SET>/'\\\\''; wslpath -w /mnt/c/dev 2>/dev/null; echo ---; cat /proc/version 2>/dev/null | head -1; echo ---; echo HOME=/home/bathina; echo PWD=__CMDSUB_OUTPUT__; node --version; python3 --version 2>/dev/null || echo \"python3: not found\"; gh --version 2>/dev/null | head -1 || echo \"gh: not found\"; cat ~/.claude/settings.json 2>/dev/null | head -50; echo ---LOCAL---; cat /mnt/c/dev/enterprise-pm-platform/.claude/settings.local.json 2>/dev/null | head -50; echo ---CLAUDE.md \\(project\\)---; cat /mnt/c/dev/enterprise-pm-platform/CLAUDE.md 2>/dev/null; echo ---CLAUDE.md \\(global\\)---; cat ~/.claude/CLAUDE.md 2>/dev/null')",
+      "Bash(bash -c '\necho \"=== CLAUDE CODE VERSION ===\"\nclaude --version 2>/dev/null || echo \"not found\"\necho\necho \"=== ENV VARS ===\"\nenv | grep -iE \"anthropic|claude|nim|proxy|base_url|model\" | sed \"s/=.*/=<SET>/\"\necho\necho \"=== WSL PATH MAPPINGS ===\"\nwslpath -w /mnt/c/dev 2>/dev/null\necho \"---\"\nhead -1 /proc/version 2>/dev/null\necho \"---\"\necho \"HOME=$HOME\"\necho \"PWD=$\\(pwd\\)\"\necho\necho \"=== NODE VERSION ===\"\nnode --version 2>/dev/null || echo \"node: not found\"\necho\necho \"=== PYTHON VERSION ===\"\npython3 --version 2>/dev/null || echo \"python3: not found\"\necho\necho \"=== GH CLI VERSION ===\"\ngh --version 2>/dev/null | head -1 || echo \"gh: not found\"\necho\necho \"=== SETTINGS.JSON HEAD ===\"\nhead -50 \"$HOME/.claude/settings.json\" 2>/dev/null || echo \"settings.json not found\"\necho \"---LOCAL---\"\nhead -50 \"/mnt/c/dev/enterprise-pm-platform/.claude/settings.local.json\" 2>/dev/null || echo \"settings.local.json not found\"\necho \"---CLAUDE.MD \\(project\\)---\"\nhead -50 \"/mnt/c/dev/enterprise-pm-platform/CLAUDE.md\" 2>/dev/null || echo \"CLAUDE.md not found\"\necho \"---CLAUDE.MD \\(global\\)---\"\nhead -50 \"$HOME/.claude/CLAUDE.md\" 2>/dev/null || echo \"global CLAUDE.md not found')",
+      "Bash(bash -c 'find \"$HOME/.claude/skills/\" -type f -name \"*.md\" 2>/dev/null | sort | while IFS= read -r f; do echo \"=== $f ===\"; head -15 \"$f\"; echo; done')",
+      "Bash(claude *)",
+      "Bash(env)",
+      "Read(//home/bathina/.claude/plugins/marketplaces/claude-plugins-official/plugins/**)",
+      "Read(//home/bathina/.claude/plugins/cache/claude-plugins-official/vercel/**)",
+      "Read(//home/bathina/.claude/plugins/cache/claude-plugins-official/vercel/0.44.0/commands/**)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(npx skills *)",
+      "mcp__plugin_ecc_chrome-devtools__list_pages"
     ]
   }
 }
