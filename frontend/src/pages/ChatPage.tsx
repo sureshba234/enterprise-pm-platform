@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useGetMessagesQuery } from '../app/api';
 import type { RootState } from '../app/store';
+import NotificationBell from './NotificationBell';
 
 interface ChatMessage {
   id: number;
@@ -125,10 +126,13 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col p-8">
-      <div className="flex gap-4 mb-4">
-        <Link to="/dashboard" className="text-sm text-blue-400 hover:underline">Dashboard</Link>
-        <Link to="/chat" className="text-sm text-blue-400 hover:underline">Chat</Link>
-      </div>
+      <div className="flex gap-4 mb-4 items-center justify-between">
+  <div className="flex gap-4 items-center">
+    <Link to="/dashboard" className="text-sm text-blue-400 hover:underline">Dashboard</Link>
+    <Link to="/chat" className="text-sm text-blue-400 hover:underline">Chat</Link>
+  </div>
+  <NotificationBell />
+</div>
 
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Team Chat</h1>

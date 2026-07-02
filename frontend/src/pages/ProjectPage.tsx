@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { DndContext, type DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
-import { useGetTasksQuery, useCreateTaskMutation, useMoveTaskMutation } from '../app/api';
+import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { useGetTasksQuery, useCreateTaskMutation, useMoveTaskMutation, useGetOrgMembersQuery } from '../app/api';
+import type { RootState } from '../app/store';
+import NotificationBell from './NotificationBell';
 
 const COLUMNS = [
   { id: 'TODO', label: 'To Do' },
@@ -62,13 +66,21 @@ export default function ProjectPage() {
   const [createTask] = useCreateTaskMutation();
   const [moveTask] = useMoveTaskMutation();
   const [newTitle, setNewTitle] = useState('');
+  const selectedOrgId = useSelector((state: RootState) => state.org.selectedOrgId);
+  const { data: members } = useGetOrgMembersQuery(selectedOrgId!, { skip: !selectedOrgId });
+  const [assigneeId, setAssigneeId] = useState<string>('');
 
   const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-    await createTask({ projectId: id, title: newTitle });
-    setNewTitle('');
-  };
+  e.preventDefault();
+  if (!newTitle.trim()) return;
+  await createTask({
+    projectId: id,
+    title: newTitle,
+    assignee: assigneeId ? Number(assigneeId) : null,
+  });
+  setNewTitle('');
+  setAssigneeId('');
+};
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -87,7 +99,14 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-8">
+     <div className="min-h-screen bg-slate-900 text-white p-8">
+      <div className="flex gap-4 mb-4 items-center justify-between">
+        <div className="flex gap-4 items-center">
+          <Link to="/dashboard" className="text-sm text-blue-400 hover:underline">Dashboard</Link>
+          <Link to="/chat" className="text-sm text-blue-400 hover:underline">Chat</Link>
+        </div>
+        <NotificationBell />
+      </div>
       <h1 className="text-2xl font-bold mb-6">Kanban Board</h1>
 
       <form onSubmit={handleCreateTask} className="flex gap-2 mb-6">
@@ -97,6 +116,16 @@ export default function ProjectPage() {
           placeholder="New task title"
           className="px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm flex-1 max-w-sm focus:outline-none focus:border-blue-500"
         />
+        <select
+  value={assigneeId}
+  onChange={(e) => setAssigneeId(e.target.value)}
+  className="px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm focus:outline-none focus:border-blue-500"
+>
+  <option value="">Unassigned</option>
+  {members?.map((m: any) => (
+    <option key={m.user} value={m.user}>{m.user_email}</option>
+  ))}
+</select>
         <button type="submit" className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-sm">
           + Add Task
         </button>

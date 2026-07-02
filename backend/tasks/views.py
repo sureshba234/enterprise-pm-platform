@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Task
 from .serializers import TaskSerializer
+from notifications.services import send_notification
 
 
 class TaskListCreateView(generics.ListCreateAPIView):
@@ -13,7 +14,15 @@ class TaskListCreateView(generics.ListCreateAPIView):
         return Task.objects.filter(project_id=self.kwargs['project_id'])
 
     def perform_create(self, serializer):
-        serializer.save(project_id=self.kwargs['project_id'], created_by=self.request.user)
+        task = serializer.save(project_id=self.kwargs['project_id'], created_by=self.request.user)
+        if task.assignee and task.assignee_id != self.request.user.id:
+            send_notification(
+                recipient=task.assignee,
+                organization=task.project.organization,
+                notification_type='task_assigned',
+                title=f'You were assigned: {task.title}',
+                body=task.description[:200],
+            )
 
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -21,6 +30,18 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Task.objects.all()
     lookup_url_kwarg = 'task_id'
+
+    def perform_update(self, serializer):
+        old_assignee_id = serializer.instance.assignee_id
+        task = serializer.save()
+        if task.assignee and task.assignee_id != old_assignee_id and task.assignee_id != self.request.user.id:
+            send_notification(
+                recipient=task.assignee,
+                organization=task.project.organization,
+                notification_type='task_assigned',
+                title=f'You were assigned: {task.title}',
+                body=task.description[:200],
+            )
 
 
 class TaskMoveView(APIView):

@@ -10,6 +10,7 @@ import {
 } from '../app/api';
 import { setSelectedOrg } from '../app/orgSlice';
 import type { RootState } from '../app/store';
+import NotificationBell from './NotificationBell';
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
@@ -51,10 +52,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
-      <div className="flex gap-4 mb-4">
-        <Link to="/dashboard" className="text-sm text-blue-400 hover:underline">Dashboard</Link>
-        <Link to="/chat" className="text-sm text-blue-400 hover:underline">Chat</Link>
-      </div>
+      <div className="flex gap-4 mb-4 items-center justify-between">
+  <div className="flex gap-4 items-center">
+    <Link to="/dashboard" className="text-sm text-blue-400 hover:underline">Dashboard</Link>
+    <Link to="/chat" className="text-sm text-blue-400 hover:underline">Chat</Link>
+  </div>
+  <NotificationBell />
+</div>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       {/* Org switcher */}

@@ -67,6 +67,27 @@ export const api = createApi({
       query: (body) => ({ url: 'orgs/', method: 'POST', body }),
       invalidatesTags: ['Organization'],
     }),
+    getOrgMembers: builder.query({
+  query: (orgId: number) => `orgs/${orgId}/members/`,
+}),
+    getNotifications: builder.query({
+  query: (orgId: number) => `orgs/${orgId}/notifications/`,
+  providesTags: ['Notification'],
+}),
+markNotificationRead: builder.mutation({
+  query: (notificationId: number) => ({
+    url: `notifications/${notificationId}/read/`,
+    method: 'PATCH',
+  }),
+  invalidatesTags: ['Notification'],
+}),
+markAllNotificationsRead: builder.mutation({
+  query: (orgId: number) => ({
+    url: `orgs/${orgId}/notifications/mark-all-read/`,
+    method: 'PATCH',
+  }),
+  invalidatesTags: ['Notification'],
+}),
     getMessages: builder.query({
       query: (orgId: number) => `orgs/${orgId}/messages/`,
     }),
@@ -125,4 +146,8 @@ export const {
   useCreateTaskMutation,
   useMoveTaskMutation,
   useGetMessagesQuery,
+  useGetNotificationsQuery,
+  useMarkNotificationReadMutation,
+  useMarkAllNotificationsReadMutation,
+  useGetOrgMembersQuery,
 } = api;
