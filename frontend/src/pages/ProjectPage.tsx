@@ -17,6 +17,8 @@ const COLUMNS = [
   { id: 'DONE', label: 'Done' },
 ];
 
+const COLUMN_IDS = COLUMNS.map((c) => c.id);
+
 function TaskCard({ task }: { task: any }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: String(task.id),
@@ -63,19 +65,20 @@ function TaskCard({ task }: { task: any }) {
           {summaryData && <p className="whitespace-pre-wrap">{summaryData.summary}</p>}
         </div>
       )}
-{task.description && (
-  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{task.description}</p>
-)}
+      {task.description && (
+        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{task.description}</p>
+      )}
     </div>
   );
 }
+
 function Column({ id, label, tasks }: { id: string; label: string; tasks: any[] }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
     <div
       ref={setNodeRef}
-      className={`bg-slate-800 rounded-lg p-3 w-64 flex-shrink-0 ${
+      className={`bg-slate-800 rounded-lg p-3 w-64 flex-shrink-0 min-h-[500px] ${
         isOver ? 'ring-2 ring-blue-500' : ''
       }`}
     >
@@ -100,6 +103,7 @@ export default function ProjectPage() {
   const selectedOrgId = useSelector((state: RootState) => state.org.selectedOrgId);
   const { data: members } = useGetOrgMembersQuery(selectedOrgId!, { skip: !selectedOrgId });
   const [assigneeId, setAssigneeId] = useState<string>('');
+  const [moveError, setMoveError] = useState<string | null>(null);
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,43 +118,51 @@ export default function ProjectPage() {
     setNewDescription('');
     setAssigneeId('');
   };
-  
-  const COLUMN_IDS = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
 
-const handleDragEnd = (event: DragEndEvent) => {
-  const { active, over } = event;
-  if (!over) return;
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
 
-  const taskId = Number(active.id);
-  const overId = String(over.id);
+    const taskId = Number(active.id);
+    const overId = String(over.id);
 
-  // If dropped on another task card, find which column that task belongs to
-  const newStatus = COLUMN_IDS.includes(overId)
-    ? overId
-    : tasks?.find((t: any) => String(t.id) === overId)?.status;
+    // If dropped on another task card, resolve to that task's column
+    const newStatus = COLUMN_IDS.includes(overId)
+      ? overId
+      : tasks?.find((t: any) => String(t.id) === overId)?.status;
 
-  if (!newStatus) return;
+    if (!newStatus) return;
 
-  const task = tasks?.find((t: any) => t.id === taskId);
-  if (!task || task.status === newStatus) return;
+    const task = tasks?.find((t: any) => t.id === taskId);
+    if (!task || task.status === newStatus) return;
 
-  moveTask({ taskId, status: newStatus, order: 0 });
-};
+    setMoveError(null);
+    try {
+      // .unwrap() throws on a rejected/error response instead of failing silently
+      await moveTask({ taskId, status: newStatus, order: 0 }).unwrap();
+    } catch (err: any) {
+      console.error('Failed to move task', err);
+      setMoveError(
+        err?.data?.detail || err?.error || 'Could not move task. It has been reverted.'
+      );
+    }
+  };
+
   const [generateSprintReport, { data: reportData, isLoading: reportLoading, error: reportError }] =
-  useGenerateSprintReportMutation();
-const [showReport, setShowReport] = useState(false);
+    useGenerateSprintReportMutation();
+  const [showReport, setShowReport] = useState(false);
 
-const handleGenerateReport = async () => {
-  setShowReport(true);
-  await generateSprintReport(id);
-};
+  const handleGenerateReport = async () => {
+    setShowReport(true);
+    await generateSprintReport(id);
+  };
 
   if (isLoading) {
     return <div className="min-h-screen bg-slate-900 text-white p-8">Loading tasks...</div>;
   }
 
   return (
-     <div className="min-h-screen bg-slate-900 text-white p-8">
+    <div className="min-h-screen bg-slate-900 text-white p-8">
       <div className="flex gap-4 mb-4 items-center justify-between">
         <div className="flex gap-4 items-center">
           <Link to="/dashboard" className="text-sm text-blue-400 hover:underline">Dashboard</Link>
@@ -161,31 +173,41 @@ const handleGenerateReport = async () => {
         <NotificationBell />
       </div>
       <h1 className="text-2xl font-bold mb-6">Kanban Board</h1>
-      <button
-  onClick={handleGenerateReport}
-  className="mb-6 px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-sm"
->
-  ✨ Generate AI Sprint Report
-</button>
 
-{showReport && (
-  <div className="mb-6 bg-slate-800 rounded-lg p-4 relative">
-    <button
-      onClick={() => setShowReport(false)}
-      className="absolute top-3 right-3 text-slate-500 hover:text-white text-sm"
-    >
-      ✕
-    </button>
-    <h2 className="text-lg font-semibold mb-3">Sprint Report</h2>
-    {reportLoading && <p className="text-slate-400 text-sm">Generating report...</p>}
-    {reportError && <p className="text-red-400 text-sm">Failed to generate report. Try again.</p>}
-    {reportData && (
-      <div className="prose prose-invert prose-sm max-w-none">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{reportData.report}</ReactMarkdown>
-      </div>
-    )}
-  </div>
-)}
+      {moveError && (
+        <div className="mb-4 bg-red-900/40 border border-red-700 text-red-200 text-sm rounded-lg px-4 py-2 flex justify-between items-center">
+          <span>{moveError}</span>
+          <button onClick={() => setMoveError(null)} className="text-red-300 hover:text-white ml-4">
+            ✕
+          </button>
+        </div>
+      )}
+
+      <button
+        onClick={handleGenerateReport}
+        className="mb-6 px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-sm"
+      >
+        ✨ Generate AI Sprint Report
+      </button>
+
+      {showReport && (
+        <div className="mb-6 bg-slate-800 rounded-lg p-4 relative">
+          <button
+            onClick={() => setShowReport(false)}
+            className="absolute top-3 right-3 text-slate-500 hover:text-white text-sm"
+          >
+            ✕
+          </button>
+          <h2 className="text-lg font-semibold mb-3">Sprint Report</h2>
+          {reportLoading && <p className="text-slate-400 text-sm">Generating report...</p>}
+          {reportError && <p className="text-red-400 text-sm">Failed to generate report. Try again.</p>}
+          {reportData && (
+            <div className="prose prose-invert prose-sm max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{reportData.report}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleCreateTask} className="flex flex-col gap-2 mb-6">
         <div className="flex gap-2">

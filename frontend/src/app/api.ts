@@ -12,7 +12,7 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Organization', 'Project', 'Task','Note'],
+  tagTypes: ['Organization', 'Project', 'Task', 'Note', 'Notification'],
   endpoints: (builder) => ({
     register: builder.mutation({
       query: (body) => ({ url: 'auth/register/', method: 'POST', body }),
@@ -68,53 +68,53 @@ export const api = createApi({
       invalidatesTags: ['Organization'],
     }),
     getNotes: builder.query({
-  query: (projectId: number) => `projects/${projectId}/notes/`,
-  providesTags: ['Note'],
-}),
-createNote: builder.mutation({
-  query: ({ projectId, ...body }: { projectId: number; title?: string; content?: string }) => ({
-    url: `projects/${projectId}/notes/`,
-    method: 'POST',
-    body,
-  }),
-  invalidatesTags: ['Note'],
-}),
-updateNote: builder.mutation({
-  query: ({ noteId, ...body }: { noteId: number; title?: string; content?: string }) => ({
-    url: `notes/${noteId}/`,
-    method: 'PATCH',
-    body,
-  }),
-  invalidatesTags: ['Note'],
-}),
-deleteNote: builder.mutation({
-  query: (noteId: number) => ({
-    url: `notes/${noteId}/`,
-    method: 'DELETE',
-  }),
-  invalidatesTags: ['Note'],
-}),
+      query: (projectId: number) => `projects/${projectId}/notes/`,
+      providesTags: ['Note'],
+    }),
+    createNote: builder.mutation({
+      query: ({ projectId, ...body }: { projectId: number; title?: string; content?: string }) => ({
+        url: `projects/${projectId}/notes/`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Note'],
+    }),
+    updateNote: builder.mutation({
+      query: ({ noteId, ...body }: { noteId: number; title?: string; content?: string }) => ({
+        url: `notes/${noteId}/`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['Note'],
+    }),
+    deleteNote: builder.mutation({
+      query: (noteId: number) => ({
+        url: `notes/${noteId}/`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Note'],
+    }),
     getOrgMembers: builder.query({
-  query: (orgId: number) => `orgs/${orgId}/members/`,
-}),
+      query: (orgId: number) => `orgs/${orgId}/members/`,
+    }),
     getNotifications: builder.query({
-  query: (orgId: number) => `orgs/${orgId}/notifications/`,
-  providesTags: ['Notification'],
-}),
-markNotificationRead: builder.mutation({
-  query: (notificationId: number) => ({
-    url: `notifications/${notificationId}/read/`,
-    method: 'PATCH',
-  }),
-  invalidatesTags: ['Notification'],
-}),
-markAllNotificationsRead: builder.mutation({
-  query: (orgId: number) => ({
-    url: `orgs/${orgId}/notifications/mark-all-read/`,
-    method: 'PATCH',
-  }),
-  invalidatesTags: ['Notification'],
-}),
+      query: (orgId: number) => `orgs/${orgId}/notifications/`,
+      providesTags: ['Notification'],
+    }),
+    markNotificationRead: builder.mutation({
+      query: (notificationId: number) => ({
+        url: `notifications/${notificationId}/read/`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['Notification'],
+    }),
+    markAllNotificationsRead: builder.mutation({
+      query: (orgId: number) => ({
+        url: `orgs/${orgId}/notifications/mark-all-read/`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['Notification'],
+    }),
     getMessages: builder.query({
       query: (orgId: number) => `orgs/${orgId}/messages/`,
     }),
@@ -131,17 +131,17 @@ markAllNotificationsRead: builder.mutation({
       invalidatesTags: ['Project'],
     }),
     generateSprintReport: builder.mutation({
-  query: (projectId: number) => ({
-    url: `projects/${projectId}/ai/sprint-report/`,
-    method: 'POST',
-  }),
-}),
-generateTaskSummary: builder.mutation({
-  query: (taskId: number) => ({
-    url: `tasks/${taskId}/ai/summary/`,
-    method: 'POST',
-  }),
-}),
+      query: (projectId: number) => ({
+        url: `projects/${projectId}/ai/sprint-report/`,
+        method: 'POST',
+      }),
+    }),
+    generateTaskSummary: builder.mutation({
+      query: (taskId: number) => ({
+        url: `tasks/${taskId}/ai/summary/`,
+        method: 'POST',
+      }),
+    }),
     getTasks: builder.query({
       query: (projectId: number) => `projects/${projectId}/tasks/`,
       providesTags: ['Task'],
@@ -160,6 +160,35 @@ generateTaskSummary: builder.mutation({
         method: 'PATCH',
         body,
       }),
+      // Optimistic update: move the card in the cache immediately,
+      // before the server responds, so there's no lag/snap-back.
+      async onQueryStarted({ taskId, status }, { dispatch, queryFulfilled, getState }) {
+        const patches: any[] = [];
+
+        // Patch every cached getTasks query (we don't know the projectId here,
+        // so patch all cache entries that contain this task).
+        const state: any = getState();
+        const queries = state.api.queries;
+        for (const key in queries) {
+          if (key.startsWith('getTasks(')) {
+            const projectId = queries[key]?.originalArgs;
+            const patchResult = dispatch(
+              api.util.updateQueryData('getTasks', projectId, (draft: any) => {
+                const task = draft.find((t: any) => t.id === taskId);
+                if (task) task.status = status;
+              })
+            );
+            patches.push(patchResult);
+          }
+        }
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // Server rejected the move — roll back every patch we applied.
+          patches.forEach((p) => p.undo());
+        }
+      },
       invalidatesTags: ['Task'],
     }),
   }),
