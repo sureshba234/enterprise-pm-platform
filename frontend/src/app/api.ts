@@ -130,6 +130,18 @@ markAllNotificationsRead: builder.mutation({
       }),
       invalidatesTags: ['Project'],
     }),
+    generateSprintReport: builder.mutation({
+  query: (projectId: number) => ({
+    url: `projects/${projectId}/ai/sprint-report/`,
+    method: 'POST',
+  }),
+}),
+generateTaskSummary: builder.mutation({
+  query: (taskId: number) => ({
+    url: `tasks/${taskId}/ai/summary/`,
+    method: 'POST',
+  }),
+}),
     getTasks: builder.query({
       query: (projectId: number) => `projects/${projectId}/tasks/`,
       providesTags: ['Task'],
@@ -181,4 +193,6 @@ export const {
   useCreateNoteMutation,
   useUpdateNoteMutation,
   useDeleteNoteMutation,
+  useGenerateSprintReportMutation,
+  useGenerateTaskSummaryMutation,
 } = api;
