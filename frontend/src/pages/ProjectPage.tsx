@@ -58,6 +58,9 @@ function TaskCard({ task }: { task: any }) {
         </button>
       </div>
       <p className="text-xs text-slate-400 mt-1">{task.priority}</p>
+      {task.due_date && (
+  <p className="text-xs text-slate-500 mt-1">Due: {task.due_date}</p>
+)}
 
       {showSummary && (
         <div className="mt-2 pt-2 border-t border-slate-600 text-xs text-slate-300">
@@ -97,6 +100,7 @@ export default function ProjectPage() {
   const id = Number(projectId);
   const { data: tasks, isLoading } = useGetTasksQuery(id);
   const [createTask] = useCreateTaskMutation();
+  const [dueDate, setDueDate] = useState('');
   const [moveTask] = useMoveTaskMutation();
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -113,10 +117,12 @@ export default function ProjectPage() {
       title: newTitle,
       description: newDescription,
       assignee: assigneeId ? Number(assigneeId) : null,
+      due_date: dueDate || null,
     });
     setNewTitle('');
     setNewDescription('');
     setAssigneeId('');
+    setDueDate('');
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -227,6 +233,12 @@ export default function ProjectPage() {
               <option key={m.user} value={m.user}>{m.user_email}</option>
             ))}
           </select>
+          <input
+  type="date"
+  value={dueDate}
+  onChange={(e) => setDueDate(e.target.value)}
+  className="px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm focus:outline-none focus:border-blue-500"
+/>
           <button type="submit" className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-sm">
             Add
           </button>

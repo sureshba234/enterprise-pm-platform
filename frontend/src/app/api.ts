@@ -146,6 +146,10 @@ export const api = createApi({
       query: (projectId: number) => `projects/${projectId}/tasks/`,
       providesTags: ['Task'],
     }),
+    getProjectStats: builder.query({
+      query: (projectId: number) => `projects/${projectId}/stats/`,
+      providesTags: ['Task'],
+    }),
     createTask: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `projects/${projectId}/tasks/`,
@@ -211,6 +215,7 @@ export const {
   useGetProjectsQuery,
   useCreateProjectMutation,
   useGetTasksQuery,
+  useGetProjectStatsQuery,
   useCreateTaskMutation,
   useMoveTaskMutation,
   useGetMessagesQuery,

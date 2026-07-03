@@ -11,6 +11,7 @@ import {
 import { setSelectedOrg } from '../app/orgSlice';
 import type { RootState } from '../app/store';
 import NotificationBell from './NotificationBell';
+import StatsPanel from './StatsPanel';
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
@@ -112,15 +113,17 @@ export default function DashboardPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               {projects?.map((project: any) => (
-                <div
-                  key={project.id}
-                  onClick={() => navigate(`/projects/${project.id}`)}
-                  className="bg-slate-700 p-4 rounded-lg hover:bg-slate-600 cursor-pointer"
-                >
-                  <h3 className="font-semibold">{project.name}</h3>
-                  <p className="text-sm text-slate-400">{project.status}</p>
-                </div>
-              ))}
+  <div key={project.id} className="bg-slate-700 p-4 rounded-lg">
+    <div
+      onClick={() => navigate(`/projects/${project.id}`)}
+      className="hover:bg-slate-600 cursor-pointer rounded p-1 -m-1 mb-3"
+    >
+      <h3 className="font-semibold">{project.name}</h3>
+      <p className="text-sm text-slate-400">{project.status}</p>
+    </div>
+    <StatsPanel projectId={project.id} />
+  </div>
+))}
             </div>
 
             <form onSubmit={handleCreateProject} className="flex gap-2">
