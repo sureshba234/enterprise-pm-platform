@@ -114,17 +114,28 @@ export default function ProjectPage() {
     setNewDescription('');
     setAssigneeId('');
   };
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
+  
+  const COLUMN_IDS = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
 
-    const taskId = Number(active.id);
-    const newStatus = String(over.id);
-    const task = tasks?.find((t: any) => t.id === taskId);
-    if (!task || task.status === newStatus) return;
+const handleDragEnd = (event: DragEndEvent) => {
+  const { active, over } = event;
+  if (!over) return;
 
-    moveTask({ taskId, status: newStatus, order: 0 });
-  };
+  const taskId = Number(active.id);
+  const overId = String(over.id);
+
+  // If dropped on another task card, find which column that task belongs to
+  const newStatus = COLUMN_IDS.includes(overId)
+    ? overId
+    : tasks?.find((t: any) => String(t.id) === overId)?.status;
+
+  if (!newStatus) return;
+
+  const task = tasks?.find((t: any) => t.id === taskId);
+  if (!task || task.status === newStatus) return;
+
+  moveTask({ taskId, status: newStatus, order: 0 });
+};
   const [generateSprintReport, { data: reportData, isLoading: reportLoading, error: reportError }] =
   useGenerateSprintReportMutation();
 const [showReport, setShowReport] = useState(false);
