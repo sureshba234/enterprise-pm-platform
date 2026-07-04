@@ -12,7 +12,7 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Organization', 'Project', 'Task', 'Note', 'Notification'],
+  tagTypes: ['Organization', 'Project', 'Task', 'Note', 'Comment', 'Notification'],
   endpoints: (builder) => ({
     register: builder.mutation({
       query: (body) => ({ url: 'auth/register/', method: 'POST', body }),
@@ -164,13 +164,8 @@ export const api = createApi({
         method: 'PATCH',
         body,
       }),
-      // Optimistic update: move the card in the cache immediately,
-      // before the server responds, so there's no lag/snap-back.
       async onQueryStarted({ taskId, status }, { dispatch, queryFulfilled, getState }) {
         const patches: any[] = [];
-
-        // Patch every cached getTasks query (we don't know the projectId here,
-        // so patch all cache entries that contain this task).
         const state: any = getState();
         const queries = state.api.queries;
         for (const key in queries) {
@@ -185,15 +180,32 @@ export const api = createApi({
             patches.push(patchResult);
           }
         }
-
         try {
           await queryFulfilled;
         } catch {
-          // Server rejected the move — roll back every patch we applied.
           patches.forEach((p) => p.undo());
         }
       },
       invalidatesTags: ['Task'],
+    }),
+    getComments: builder.query({
+      query: (taskId: number) => `tasks/${taskId}/comments/`,
+      providesTags: ['Comment'],
+    }),
+    addComment: builder.mutation({
+      query: ({ taskId, body }: { taskId: number; body: string }) => ({
+        url: `tasks/${taskId}/comments/`,
+        method: 'POST',
+        body: { body },
+      }),
+      invalidatesTags: ['Comment'],
+    }),
+    deleteComment: builder.mutation({
+      query: (commentId: number) => ({
+        url: `comments/${commentId}/`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Comment'],
     }),
   }),
 });
@@ -229,4 +241,7 @@ export const {
   useDeleteNoteMutation,
   useGenerateSprintReportMutation,
   useGenerateTaskSummaryMutation,
+  useGetCommentsQuery,
+  useAddCommentMutation,
+  useDeleteCommentMutation,
 } = api;

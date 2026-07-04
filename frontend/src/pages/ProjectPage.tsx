@@ -9,6 +9,7 @@ import NotificationBell from './NotificationBell';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useGenerateSprintReportMutation } from '../app/api';
+import TaskComments from './TaskComments';
 
 const COLUMNS = [
   { id: 'TODO', label: 'To Do' },
@@ -19,13 +20,14 @@ const COLUMNS = [
 
 const COLUMN_IDS = COLUMNS.map((c) => c.id);
 
-function TaskCard({ task }: { task: any }) {
+function TaskCard({ task, currentUserEmail }: { task: any; currentUserEmail: string }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: String(task.id),
   });
   const [generateSummary, { data: summaryData, isLoading: summaryLoading }] =
     useGenerateTaskSummaryMutation();
   const [showSummary, setShowSummary] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const style = transform
     ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 50 }
@@ -33,49 +35,70 @@ function TaskCard({ task }: { task: any }) {
 
   const handleSummarize = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowSummary(true);
-    await generateSummary(task.id);
+    setShowSummary((s) => !s);
+    if (!showSummary) await generateSummary(task.id);
   };
 
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       style={style}
-      className={`bg-slate-700 p-3 rounded-lg mb-2 cursor-grab active:cursor-grabbing ${
-        isDragging ? 'opacity-50' : ''
-      }`}
+      className={`bg-slate-700 rounded-lg mb-2 ${isDragging ? 'opacity-50' : ''}`}
     >
-      <div className="flex justify-between items-start">
-        <p className="text-sm font-medium">{task.title}</p>
-        <button
-          onClick={handleSummarize}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="text-xs text-purple-400 hover:text-purple-300 flex-shrink-0 ml-2"
-        >
-          ✨
-        </button>
-      </div>
-      <p className="text-xs text-slate-400 mt-1">{task.priority}</p>
-      {task.due_date && (
-  <p className="text-xs text-slate-500 mt-1">Due: {task.due_date}</p>
-)}
-
-      {showSummary && (
-        <div className="mt-2 pt-2 border-t border-slate-600 text-xs text-slate-300">
-          {summaryLoading && <p className="text-slate-500">Thinking...</p>}
-          {summaryData && <p className="whitespace-pre-wrap">{summaryData.summary}</p>}
+      {/* Drag handle row */}
+      <div
+        {...listeners}
+        {...attributes}
+        className="p-3 cursor-grab active:cursor-grabbing"
+      >
+        <div className="flex justify-between items-start">
+          <p className="text-sm font-medium">{task.title}</p>
+          <div className="flex gap-2 items-center flex-shrink-0 ml-2">
+            <button
+              onClick={handleSummarize}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="text-xs text-purple-400 hover:text-purple-300"
+            >
+              ✨
+            </button>
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setExpanded((x) => !x); }}
+              className="text-xs text-slate-400 hover:text-white"
+            >
+              {expanded ? '▲' : '▼'}
+            </button>
+          </div>
         </div>
-      )}
-      {task.description && (
-        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{task.description}</p>
+        <p className="text-xs text-slate-400 mt-1">{task.priority}</p>
+        {task.due_date && (
+          <p className="text-xs text-slate-500 mt-1">Due: {task.due_date}</p>
+        )}
+        {task.description && (
+          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{task.description}</p>
+        )}
+        {showSummary && (
+          <div className="mt-2 pt-2 border-t border-slate-600 text-xs text-slate-300">
+            {summaryLoading && <p className="text-slate-500">Thinking...</p>}
+            {summaryData && <p className="whitespace-pre-wrap">{summaryData.summary}</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Expandable comments section */}
+      {expanded && (
+        <div
+          className="px-3 pb-3 border-t border-slate-600"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <TaskComments taskId={task.id} currentUserEmail={currentUserEmail} />
+        </div>
       )}
     </div>
   );
 }
 
-function Column({ id, label, tasks }: { id: string; label: string; tasks: any[] }) {
+function Column({ id, label, tasks, currentUserEmail }: { id: string; label: string; tasks: any[]; currentUserEmail: string }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -89,7 +112,7 @@ function Column({ id, label, tasks }: { id: string; label: string; tasks: any[] 
         {label} <span className="text-slate-500">({tasks.length})</span>
       </h3>
       {tasks.map((task) => (
-        <TaskCard key={task.id} task={task} />
+        <TaskCard key={task.id} task={task} currentUserEmail={currentUserEmail} />
       ))}
     </div>
   );
@@ -153,6 +176,15 @@ export default function ProjectPage() {
       );
     }
   };
+  const currentUserEmail = (() => {
+    try {
+      const token = localStorage.getItem('access');
+      if (!token) return '';
+      return JSON.parse(atob(token.split('.')[1])).email || '';
+    } catch {
+      return '';
+    }
+  })();
 
   const [generateSprintReport, { data: reportData, isLoading: reportLoading, error: reportError }] =
     useGenerateSprintReportMutation();
@@ -234,11 +266,11 @@ export default function ProjectPage() {
             ))}
           </select>
           <input
-  type="date"
-  value={dueDate}
-  onChange={(e) => setDueDate(e.target.value)}
-  className="px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm focus:outline-none focus:border-blue-500"
-/>
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm focus:outline-none focus:border-blue-500"
+          />
           <button type="submit" className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-sm">
             Add
           </button>
@@ -259,6 +291,7 @@ export default function ProjectPage() {
               id={col.id}
               label={col.label}
               tasks={tasks?.filter((t: any) => t.status === col.id) || []}
+              currentUserEmail={currentUserEmail}
             />
           ))}
         </div>

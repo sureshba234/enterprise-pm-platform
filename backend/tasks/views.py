@@ -2,8 +2,8 @@ from django.db.models import Count
 from rest_framework import generics, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Task
-from .serializers import TaskSerializer
+from .models import Task, Comment
+from .serializers import TaskSerializer, CommentSerializer
 from notifications.services import send_notification
 
 
@@ -99,3 +99,20 @@ class ProjectStatsView(APIView):
                 'URGENT': priority_counts.get('URGENT', 0),
             },
         })
+
+class CommentListCreateView(generics.ListCreateAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Comment.objects.filter(task_id=self.kwargs['task_id'])
+
+    def perform_create(self, serializer):
+        serializer.save(task_id=self.kwargs['task_id'], author=self.request.user)
+
+
+class CommentDeleteView(generics.DestroyAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Comment.objects.all()
+    lookup_url_kwarg = 'comment_id'
